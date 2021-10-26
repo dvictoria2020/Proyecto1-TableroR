@@ -1,0 +1,250 @@
+---
+title: "Patentes comerciales en la Municipalidad de Santa Ana"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    theme: cerulean
+---
+
+
+```{r paquetes, warning=FALSE, message=FALSE}
+# Paquete para manipulación de datos
+library(dplyr)
+# Paquete para manejo de datos vectoriales
+library(sf)
+# Paquetes para manejo de datos raster
+library(terra)
+# Paquete para manejo de tablas
+library(DT)
+# Paquetes para graficación
+library(ggplot2)
+library(plotly)
+library(graphics)
+# Paquete para mapas interactivos
+library(leaflet)
+# Paquete flexdashboard
+library(flexdashboard)
+```
+
+
+```{r datos, warning=FALSE, message=FALSE}
+# Lectura de una capa vectorial (GeoJSON) de división distrial de Santa Ana
+limite_distrital <-
+  st_read(
+    "https://dvictoria2020.github.io/Proyecto1-R/limite_distrital.geojson",
+    quiet = TRUE
+  )
+# Transformación del CRS del objeto división distrital
+limite_distrital <-
+  limite_distrital %>%
+  st_transform(4326)
+# Lectura de archivo CSV de patentes comerciales en Santa Ana
+Patente_final <-
+  st_read(
+    "/vsicurl/https://dvictoria2020.github.io/Proyecto1-R/Patente_final.csv",
+    options = c(
+      "X_POSSIBLE_NAMES=Latitud",
+      "Y_POSSIBLE_NAMES=Longitud"
+    ),
+    quiet = TRUE
+  )
+# Asignación de un CRS al objeto patentes
+st_crs(Patente_final) <- 4326
+# Lectura de capa raster de uso urbano
+uso_urbano_rWGS <-
+  rast(
+    "/vsicurl/https://dvictoria2020.github.io/Proyecto1-R/uso_urbano_rWGS.tif",
+  )
+```
+
+Proceso Patentes Comerciales
+=======================================================================
+
+El Proceso de Patentes de la Municipalidad de Santa Ana tiene por objetivo autorizar, controlar y fiscalizar las actividades comerciales en el Cantón, en cumplimiento con la normativa vigente. Es un proceso que forma parte de Gestión Financiera y Tributaria y está subordinado a la Alcaldía Municipal.
+
+
+**Gestiones que realiza el Proceso de Patentes:**
+
+- Generar anualmente el cálculo de la base imponible según el proceso de declaración juradas de los contribuyentes del impuesto de patentes.
+
+- Resolver los reclamos administrativos y denuncias que presenten los contribuyentes del impuesto de patentes o cualquier ciudadano(a), relacionadas con actividades comerciales en el Cantón.
+
+- Verificar y resolver las solicitudes recibidas para el otorgamiento de licencias municipales.
+
+- Trasladar al proceso de Asesoría Legal la resolución de los recursos de revocatoria con apelación en subsidio.
+
+- Gestionar las publicaciones en el diario oficial “La Gaceta” sobre traspasos de licencias de licor.
+
+- Coordinar los procesos de clausura de actividades económicas y comerciales que no cumplan con la normativa vigente.
+
+
+**Información general:**
+
+
+**¿Cómo se determina el impuesto de la patente o licencia comercial?**
+
+El impuesto es determinado según la Ley de Impuestos Municipales del Cantón de Santa Ana N°7245, toda actividad debe cancelar su impuesto, para ello:
+Artículo 2.- El impuesto de patentes se pagará durante el tiempo en que se haya tenido abierto el establecimiento o se haya ejercido el comercio en forma ambulante y durante el tiempo en que se haya poseído la licencia, aunque la actividad no se hubiera realizado.
+Para la determinación del impuesto se dispone:
+
+Artículo 3.- Salvo los casos en que esta Ley determine un procedimiento diferente para fijar el monto del impuesto de patentes, se establecen como factores determinantes para la imposición: la renta líquida gravable y las ventas o los ingresos brutos anuales que perciban las personas físicas o jurídicas afectas al impuesto, durante el período fiscal anterior al año en que se da la imposición.
+
+Artículo 4.-La renta líquida gravable y las ventas o los ingresos brutos anuales, determinarán el monto del impuesto de patente que le corresponde pagar a cada contribuyente, de conformidad con el párrafo primero del artículo 1.
+
+**¿Cómo se solicita una patente o licencia comercial?**
+
+1.	Solicitar el uso de suelo para la actividad que se desea explotar, para ello deberá ingresar a la página web de la Municipalidad www.santaana.go.cr y proceder a registrarse como un usuario. Luego proceder a ingresar a su perfil y dirigirse a los trámites digitales y seguir los pasos para uso de suelo. Este trámite tiene un costo de ¢2400.
+2.	Requisitos necesarios para la presentación de la patente, deberá ingresar a la sección "Formularios" o mediante el siguiente enlace https://www.santaana.go.cr/index.php/tramites Allí buscará la opción de Solicitud de Patente, y podrá conocer los requisitos y descargar el formulario de solicitud y la autorización del dueño de la propiedad.
+3.	Solicitar cita para gestión de solicitud de patente nueva. Deberá llamar al 2582-7200 y gestionar una cita con la Plataforma de Servicios para la presentación de la documentación y con ello iniciar el proceso del trámite (Durante Pandemia COVID-19).
+
+
+
+En las siguientes pestañas usted encontrará información relevante sobre una muestra aleatoria correspondiente a la distribución de las Licencias Comerciales del cantón, presentadas en un mapa, gráficas y tablas.
+
+
+
+
+
+Mapa
+=======================================================================
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### Muestra de distribución de patentes comerciales en Santa Ana
+
+```{r mapa, warning=FALSE}
+# Conversión del objeto uso a la clase RasterLayer
+uso_urbano_rWGS_rl <- raster::raster(uso_urbano_rWGS)
+# Mapa leaflet
+leaflet() %>%
+  
+  addTiles(options = providerTileOptions(noWrap = TRUE), group="Open Street Maps") %>%
+  addProviderTiles("Esri.WorldImagery", group="Imagen Satelital")%>%
+  
+  addRasterImage(
+    uso_urbano_rWGS_rl,
+    color= "#DDB892",
+    opacity = 0.6,
+    group = "Uso Urbano 2005"
+  )%>%
+  
+  addPolygons(
+    data = limite_distrital,
+    color = "purple",
+    fillColor = "transparent",
+    stroke = TRUE,
+    weight = 2.0,
+    group = "Limite distrital"
+  )%>% 
+  
+  addCircleMarkers(
+    data = Patente_final,
+    stroke = F,
+    radius = 4,
+    fillColor = 'orange',
+    fillOpacity = 1,
+    clusterOptions = markerClusterOptions(),
+    group = "Patentes comerciales"
+  )%>% 
+  
+  addMiniMap(
+    tiles = providers$OpenStreetMap,
+    toggleDisplay = TRUE
+  )%>%
+ 
+ addLayersControl(
+   baseGroups = c("Open Street Maps","Imagen Satelital"),
+   overlayGroups = c("Uso Urbano 2005","Limite distrital", "Patentes comerciales"), 
+   options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+Gráficos
+=======================================================================
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Gráfico 1
+
+```{r cantidad}
+tipo_persona_distrito <-
+  Patente_final %>%
+  dplyr::count(Tipo_persona, Distrito)
+```
+
+```{r grafico-barras-apiladas}
+  ggplot() + geom_col(
+      data= tipo_persona_distrito,
+      aes(x= Distrito,
+          y= n, fill = Tipo_persona), width = 0.7)+
+  
+      ggtitle( "Distribución de patentes comerciales por tipo de personería
+                          en los distritos de Santa Ana") +
+      xlab("Distrito") + 
+      ylab("Total de patentes") +
+      scale_fill_manual(values = c("#FFE4C4", "#8B7D6B")) +
+      theme (
+        legend.title = element_blank(),
+        legend.position = "right",
+        plot.title = element_text(size = 14, face = "plain")
+        
+  )
+```
+
+### Gráfico 2
+
+```{r grafico-2-pastel-licencias-por-distrito}
+# Convertimos a porcentaje
+  
+porcentaje <- Patente_final %>%
+  group_by(Distrito) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(percentage = `n` / sum(`n`) * 100)
+ggplot(porcentaje, aes(x = 1, y = percentage, fill = Distrito)) +
+  geom_bar(stat = "identity", colour = "black", size = 0.25) +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  labs(title = "Porcentaje de licencias comerciales y de licor según 
+                 distrito en el cantón Santa Ana") +
+  theme_void() + scale_fill_brewer(palette = "Dark2")
+```
+
+### Gráfico 3
+
+
+```{r grafico-3-pastel-licencias-por-distrito}
+# Convertimos a porcentaje
+  
+porcentaje_rotulo <- Patente_final %>%
+  group_by(Rotulo) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(percentage = `n` / sum(`n`) * 100)
+ggplot(porcentaje_rotulo, aes(x = 1, y = percentage, fill = Rotulo)) +
+  geom_bar(stat = "identity", colour = "black", size = 0.25) +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  labs(title = "Locales comerciales que han tramitado una 
+  solicitud de rótulo en el cantón Santa Ana") +
+  theme_void() + scale_fill_brewer(palette = "Blues")
+```
+
+Tabla
+=======================================================================
+
+
+```{r tabla}
+ Patente_final %>%
+  st_drop_geometry() %>%
+  select(N_patente, Aprobacion, Nombre_comercio, Permiso_salud, Rotulo, N_finca, Tipo_persona, Direccion_, Distrito) %>%
+  datatable(Patente_final, options = list(
+    language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json'),
+    pageLenth =5
+  ))
+```
