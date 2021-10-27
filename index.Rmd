@@ -5,6 +5,8 @@ output:
     orientation: rows
     vertical_layout: fill
     theme: cerulean
+    source_code: embed
+    
 ---
 
 
